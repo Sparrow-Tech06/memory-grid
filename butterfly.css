@@ -53,3 +53,5 @@ body { background: #fff; font-family: system-ui; overflow: hidden; color: #2c3e5
   .theme-scroll::-webkit-scrollbar {
     display: none;
   }
+.color-dot { scroll-snap-align: center; }
+
