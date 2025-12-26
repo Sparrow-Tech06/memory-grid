@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Grid Game</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<style>
+body{ background:#f0f2f5; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+.game-card{ border-radius:20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border:none; transition: all 0.3s ease; }
+.grid{ display:grid; gap:12px; transition: all 0.5s ease; }
+
+.cell{
+  background:#dee2e6;
+  border-radius:12px;
+  aspect-ratio:1;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.3s;
+}
+.cell:active { transform: scale(0.95); }
+
+/* Animations & Colors */
+.cell.active{ background:#4dabf7; transform: scale(1.05); }
+.cell.correct{ background:#51cf66; animation: pulse 0.5s; }
+.cell.wrong{ background:#ff6b6b; animation: shakeX 0.5s; }
+
+.overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.6);
+  display:flex; align-items:center; justify-content:center; z-index:1000;
+  backdrop-filter: blur(4px);
+}
+.popup{ background:#fff; border-radius:20px; padding:30px; width:300px; text-align:center; }
+.timer-text { font-weight: bold; color: #ff6b6b; font-size: 1.2rem; }
+</style>
+</head>
+
+<body>
+
+<div id="app" class="container min-vh-100 d-flex align-items-center justify-content-center">
+
+  <div class="game-card bg-white p-4 w-100 animate__animated animate__fadeIn" style="max-width:380px">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="h5 mb-0">Level: <span class="text-primary">{{ level }}</span></div>
+      <div class="badge bg-dark p-2">High Score: {{ highScore }}</div>
+    </div>
+
+    <div class="text-center mb-3" style="height: 30px;">
+      <div v-if="isCountingDown" class="timer-text animate__animated animate__bounceIn">
+        Starting in: {{ countdown }}s
+      </div>
+      <div v-else-if="!canClick && gameStarted" class="text-muted small">Memorize the pattern!</div>
+      <div v-else-if="canClick" class="text-success small fw-bold">Repeat the pattern!</div>
+    </div>
+
+    <div class="grid my-4" :style="{gridTemplateColumns:`repeat(${gridCols},1fr)`}">
+      <div v-for="(c,i) in totalCells"
+           :key="i"
+           class="cell animate__animated"
+           :class="cellClass(i)"
+           @click="selectCell(i)">
+      </div>
+    </div>
+
+    <button v-if="!gameStarted" class="btn btn-primary w-100 py-2 fw-bold" @click="startLevel">
+      START GAME
+    </button>
+    <button v-else class="btn btn-outline-secondary w-100 py-2" @click="startLevel">
+      RETRY LEVEL
+    </button>
+  </div>
+
+  <div v-if="popup.show" class="overlay animate__animated animate__fadeIn">
+    <div class="popup animate__animated animate__zoomIn">
+      <h3 class="mb-2">{{ popup.title }}</h3>
+      <p class="text-muted">{{ popup.msg }}</p>
+      <button class="btn btn-primary w-100 mt-3" @click="popupAction">
+        {{ popup.success ? 'Next Level' : 'Try Again' }}
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data(){
+    return{
+      level: 1,
+      highScore: localStorage.getItem('memoryHighScore') || 0,
+      pattern: [],
+      userPick: [],
+      canClick: false,
+      gameStarted: false,
+      isCountingDown: false,
+      countdown: 3,
+      popup: { show: false, title: '', msg: '', success: false }
+    }
+  },
+  computed:{
+    totalCells(){
+      // Logic: Starts with 4 cells (2x2), grows slowly
+      return Math.pow(Math.floor(this.level / 3) + 2, 2);
+    },
+    gridCols(){
+      return Math.sqrt(this.totalCells);
+    }
+  },
+  methods:{
+    startLevel(){
+      this.gameStarted = true;
+      this.userPick = [];
+      this.pattern = [];
+      this.canClick = false;
+      this.isCountingDown = false;
+      this.popup.show = false;
+
+      // 1. Generate Pattern (Length increases every 2 levels)
+      const patternSize = 2 + Math.floor(this.level / 2);
+      while(this.pattern.length < patternSize){
+        let r = Math.floor(Math.random() * this.totalCells);
+        if(!this.pattern.includes(r)) this.pattern.push(r);
+      }
+
+      // 2. Blink Pattern
+      this.blinkPattern();
+    },
+
+    blinkPattern(){
+      // Show pattern for 1.2 seconds
+      setTimeout(() => {
+        this.startCountdown();
+      }, 1200);
+    },
+
+    startCountdown(){
+      this.isCountingDown = true;
+      this.countdown = 3;
+      let timer = setInterval(() => {
+        this.countdown--;
+        if(this.countdown <= 0){
+          clearInterval(timer);
+          this.isCountingDown = false;
+          this.canClick = true;
+        }
+      }, 1000);
+    },
+
+    selectCell(i){
+      if(!this.canClick || this.userPick.includes(i)) return;
+
+      this.userPick.push(i);
+
+      // Wrong Pick
+      if(!this.pattern.includes(i)){
+        this.canClick = false;
+        setTimeout(() => {
+          this.popup = { show: true, title: "Game Over! ❌", msg: "Wrong tile selected.", success: false };
+        }, 500);
+        return;
+      }
+
+      // Level Complete
+      if(this.userPick.length === this.pattern.length){
+        this.canClick = false;
+        if(this.level > this.highScore) {
+            this.highScore = this.level;
+            localStorage.setItem('memoryHighScore', this.level);
+        }
+        setTimeout(() => {
+          this.popup = { show: true, title: "Great! 🎉", msg: "Pattern matched perfectly.", success: true };
+        }, 500);
+      }
+    },
+
+    popupAction(){
+      if(this.popup.success) {
+        this.level++;
+      } else {
+        this.level = 1; // Reset if failed, or keep same level if you prefer
+      }
+      this.startLevel();
+    },
+
+    cellClass(i){
+      let classes = [];
+      // Show pattern briefly at start
+      if(!this.gameStarted || (!this.canClick && !this.isCountingDown && this.pattern.includes(i))) {
+          classes.push('active');
+      }
+      if(this.userPick.includes(i)){
+        classes.push(this.pattern.includes(i) ? 'correct' : 'wrong');
+      }
+      return classes.join(' ');
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
