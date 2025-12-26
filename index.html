@@ -25,7 +25,7 @@
         <div v-for="i in 9" :key="i" class="cell" :class="{'active': jsonData.menuConfig.previewPattern.includes(i)}"></div>
       </div>
 
-      <div class="mb-4 d-flex justify-content-center gap-3">
+      <div class="mb-4 theme-scroll d-flex justify-content-center gap-3">
         <div v-for="t in jsonData.themes" :key="t.color" 
              class="color-dot" 
              :style="{background: t.color, width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', border: activeTheme === t.color ? '3px solid #000' : '1px solid #ddd'}"
