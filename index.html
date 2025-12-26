@@ -27,12 +27,18 @@
       </div>
 <!-- Centered fixed width scroll box -->
   <div class="theme-wrapper mb-4">
-      <div class="theme-scroll d-flex justify-content-center gap-3">
-        <div v-for="t in jsonData.themes" :key="t.color" 
-             class="color-dot" 
-             :style="{background: t.color, width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', border: activeTheme === t.color ? '3px solid #000' : '1px solid #ddd'}"
-             @click="setTheme(t.color)"></div>
+    <div class="theme-scroll">
+      <div v-for="t in jsonData.themes"
+           :key="t.color"
+           class="color-dot"
+           :title="t.name"
+           :style="{
+             background: t.color,
+             border: activeTheme === t.color ? '3px solid #000' : '1px solid #ccc'
+           }"
+           @click="setTheme(t.color)">
       </div>
+    </div>
   </div>
 
       <button class="btn btn-pill mb-5" @click="changeScreen('game')">START GAME</button>
