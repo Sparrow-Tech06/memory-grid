@@ -9,50 +9,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
-<style>
-:root { --p-color: #34495e; }
-body { background: #fff; font-family: system-ui; overflow: hidden; color: #2c3e50; }
+<link rel="stylesheet" href="butterfly.css">
 
-/* Raw Template Brackets ko hide karne ke liye */
-[v-cloak] { display: none; }
-
-/* Loading Text Animation */
-.loading-screen { font-size: 1.2rem; font-weight: 700; letter-spacing: 2px; animation: pulse 1.5s infinite; }
-
-/* Grid Layout */
-.grid { display: grid; gap: 10px; margin: 20px auto; max-width: 320px; }
-.cell {
-  background: transparent; border: 1.8px solid #333; border-radius: 12px;
-  aspect-ratio: 1; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Dynamic Classes */
-.cell.active, .cell.correct { background: var(--p-color) !important; border-color: var(--p-color) !important; }
-.cell.wrong { background: #ff7675 !important; border-color: #ff7675 !important; animation: shakeX 0.4s; }
-
-/* Buttons */
-.btn-pill {
-  border: 2px solid #333; background: #fff; border-radius: 50px;
-  padding: 10px 50px; font-weight: 700; transition: 0.2s;
-}
-.btn-pill:active { transform: scale(0.95); }
-
-/* Menu Bottom Icons */
-.bottom-nav { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; }
-.bottom-nav a { color: #333; font-size: 1.6rem; text-decoration: none; transition: 0.3s; }
-.bottom-nav a:hover { transform: translateY(-5px); color: var(--p-color); }
-
-/* Popup Styling */
-.popup-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-  display: flex; align-items: center; justify-content: center; z-index: 2000;
-  backdrop-filter: blur(4px);
-}
-.popup-content { background: #fff; padding: 35px; border-radius: 25px; width: 85%; max-width: 320px; text-align: center; }
-
-/* Timer Display */
-.timer-text { font-size: 1.2rem; font-weight: bold; color: #e74c3c; }
-</style>
 </head>
 
 <body>
