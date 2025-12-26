@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Flash Pro</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<style>
+:root { --primary-color: #34495e; --bg-color: #ffffff; }
+body { background: var(--bg-color); font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+
+/* Grid System */
+.grid { display: grid; gap: 10px; margin: 20px auto; max-width: 320px; transition: all 0.4s ease; }
+.cell {
+  background: transparent; border: 1.5px solid #2c3e50; border-radius: 14px;
+  aspect-ratio: 1; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cell.active { background: var(--primary-color) !important; transform: scale(0.95); }
+.cell.correct { background: var(--primary-color) !important; animation: pulse 0.4s; }
+.cell.wrong { background: #e74c3c !important; animation: shakeX 0.5s; border-color: #e74c3c !important; }
+
+/* Interactive UI */
+.btn-main {
+  border: 2px solid #2c3e50; background: #fff; border-radius: 50px;
+  padding: 12px 50px; font-weight: 700; transition: 0.3s;
+}
+.btn-main:active { transform: scale(0.9); }
+
+.color-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.color-dot.selected { transform: scale(1.3); border-color: #000; }
+
+/* Modern Popup */
+.popup-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+.popup-box {
+  background: #fff; padding: 40px 30px; border-radius: 30px;
+  width: 85%; max-width: 340px; text-align: center;
+}
+
+.bottom-bar { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; }
+.bottom-bar a { color: #2c3e50; font-size: 1.5rem; transition: 0.3s; }
+
+.status-tag { font-size: 0.9rem; font-weight: 600; padding: 5px 15px; border-radius: 20px; background: #f8f9fa; }
+</style>
+</head>
+
+<body>
+
+<div id="app" class="container min-vh-100 d-flex flex-column align-items-center justify-content-center">
+
+  <div v-if="currentScreen === 'menu'" class="w-100 text-center animate__animated animate__fadeIn">
+    <div class="grid mb-5" style="grid-template-columns: repeat(3, 1fr);">
+      <div v-for="i in 9" :key="i" class="cell" :class="{'active': [1,3,5,7,9].includes(i)}"></div>
+    </div>
+
+    <div class="mb-4">
+      <div class="color-options d-flex justify-content-center gap-3">
+        <div v-for="theme in themes" :key="theme.color" 
+             class="color-dot" :style="{background: theme.color}"
+             :class="{selected: config.activeTheme === theme.color}"
+             @click="updateTheme(theme.color)"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-main" @click="changeScreen('game')">START GAME</button>
+
+    <div class="bottom-bar">
+      <a href="#"><i class="bi bi-gear-wide-connected"></i></a>
+      <a href="#"><i class="bi bi-trophy"></i></a>
+      <a href="#"><i class="bi bi-question-circle"></i></a>
+    </div>
+  </div>
+
+  <div v-if="currentScreen === 'game'" class="w-100 text-center animate__animated animate__fadeIn">
+    <div class="position-absolute top-0 start-0 p-3" @click="changeScreen('menu')" style="cursor:pointer">
+      <i class="bi bi-arrow-left-circle-fill h3"></i>
+    </div>
+
+    <div class="d-flex justify-content-between w-100 px-4 mb-4" style="max-width: 400px;">
+      <span class="status-tag">LEVEL {{ level }}</span>
+      <span class="status-tag text-primary">BEST: {{ highScore }}</span>
+    </div>
+
+    <div class="message-area mb-3" style="height: 30px;">
+      <h5 v-if="gameState === 'memorize'" class="animate__animated animate__flash">MEMORIZE!</h5>
+      <h5 v-if="gameState === 'countdown'" class="text-danger">READY: {{ countdown }}</h5>
+      <h5 v-if="gameState === 'play'" class="text-success animate__animated animate__bounceIn">GO!</h5>
+    </div>
+
+    <div class="grid" :style="{gridTemplateColumns: `repeat(${gridSize}, 1fr)`}">
+      <div v-for="(cell, index) in totalCells" :key="index" 
+           class="cell" :class="getCellClass(index)" 
+           @click="handleCellClick(index)"></div>
+    </div>
+
+    <button v-if="gameState === 'idle'" class="btn btn-main" @click="initLevel">TAP TO START</button>
+    <button v-else class="btn btn-pill border-0 text-muted" @click="initLevel" style="font-size: 0.8rem;">Restart Level</button>
+  </div>
+
+  <div v-if="popup.show" class="popup-overlay animate__animated animate__fadeIn">
+    <div class="popup-box animate__animated animate__zoomIn">
+      <div class="display-1 mb-3">{{ popup.success ? '🎉' : '💔' }}</div>
+      <h2 class="fw-bold" :style="{color: popup.success ? '#27ae60' : '#e74c3c'}">
+        {{ popup.title }}
+      </h2>
+      <p class="text-muted">{{ popup.message }}</p>
+      <button class="btn btn-main w-100 mt-3" 
+              :style="{background: config.activeTheme, color: '#fff', border: 'none'}"
+              @click="closePopup">
+        CONTINUE
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      currentScreen: 'menu',
+      level: 1,
+      highScore: localStorage.getItem('mem_flash_high') || 0,
+      gameState: 'idle', // idle, memorize, countdown, play
+      countdown: 3,
+      gridSize: 3,
+      pattern: [],
+      userSequence: [],
+      popup: { show: false, title: '', message: '', success: false },
+      
+      // JSON data simulation (Game Configuration)
+      config: {
+        activeTheme: '#34495e',
+        baseTiles: 2,
+        countdownTime: 3000
+      },
+      themes: [
+        { name: 'Classic', color: '#34495e' },
+        { name: 'Royal', color: '#6c5ce7' },
+        { name: 'Emerald', color: '#27ae60' },
+        { name: 'Sunset', color: '#e67e22' }
+      ]
+    }
+  },
+  computed: {
+    totalCells() { return this.gridSize * this.gridSize; }
+  },
+  methods: {
+    updateTheme(color) {
+      this.config.activeTheme = color;
+      document.documentElement.style.setProperty('--primary-color', color);
+    },
+    changeScreen(screen) {
+      this.currentScreen = screen;
+      this.gameState = 'idle';
+      if(screen === 'game') this.level = 1;
+    },
+    initLevel() {
+      this.userSequence = [];
+      this.pattern = [];
+      this.gameState = 'memorize';
+      this.popup.show = false;
+
+      // JSON-like Logic: Grid size increases every 4 levels
+      this.gridSize = Math.floor(this.level / 4) + 3;
+      
+      // Calculate pattern length
+      const count = this.config.baseTiles + Math.floor(this.level / 2);
+      while(this.pattern.length < count) {
+        let r = Math.floor(Math.random() * this.totalCells);
+        if(!this.pattern.includes(r)) this.pattern.push(r);
+      }
+
+      // Phase 1: Show Pattern
+      setTimeout(() => { this.startCountdown(); }, 1200);
+    },
+    startCountdown() {
+      this.gameState = 'countdown';
+      this.countdown = 3;
+      let timer = setInterval(() => {
+        this.countdown--;
+        if(this.countdown === 0) {
+          clearInterval(timer);
+          this.gameState = 'play';
+        }
+      }, 1000);
+    },
+    handleCellClick(index) {
+      if(this.gameState !== 'play' || this.userSequence.includes(index)) return;
+
+      this.userSequence.push(index);
+
+      if(!this.pattern.includes(index)) {
+        this.gameState = 'idle';
+        this.triggerPopup(false);
+        return;
+      }
+
+      if(this.userSequence.length === this.pattern.length) {
+        if(this.level > this.highScore) {
+          this.highScore = this.level;
+          localStorage.setItem('mem_flash_high', this.level);
+        }
+        this.triggerPopup(true);
+      }
+    },
+    triggerPopup(isWin) {
+      setTimeout(() => {
+        this.popup = {
+          show: true,
+          success: isWin,
+          title: isWin ? "Mastermind!" : "Oh No!",
+          message: isWin ? `You cleared Level ${this.level} with ease.` : "Memory failed you this time."
+        };
+      }, 500);
+    },
+    closePopup() {
+      this.popup.show = false;
+      if(this.popup.success) this.level++;
+      else this.level = 1;
+      this.initLevel();
+    },
+    getCellClass(index) {
+      if(this.gameState === 'memorize' && this.pattern.includes(index)) return 'active';
+      if(this.userSequence.includes(index)) {
+        return this.pattern.includes(index) ? 'correct' : 'wrong';
+      }
+      return '';
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
