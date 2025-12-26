@@ -1,21 +1,29 @@
 {
   "gameSettings": {
-    "baseGridSize": 3,
     "countdownSeconds": 3,
     "memorizeTime": 1200,
-    "tilesPerLevelInc": 0.5
+    "baseTiles": 2,
+    "tilesPerLevelInc": 0.5,
+    "gridStep": 4
   },
   "themes": [
-    { "name": "Midnight", "color": "#34495e" },
+    { "name": "Classic", "color": "#34495e" },
     { "name": "Royal", "color": "#6c5ce7" },
     { "name": "Emerald", "color": "#27ae60" },
     { "name": "Ruby", "color": "#d63031" },
     { "name": "Ocean", "color": "#0984e3" }
   ],
   "messages": {
-    "winTitle": "Perfect! 🌟",
-    "winMsg": "Aapki memory kamaal ki hai.",
-    "lossTitle": "Oops! ❌",
-    "lossMsg": "Koshish jaari rakhein."
+    "winTitle": "Well Done! 🎉",
+    "winMsg": "Next level unlocked. Keep it up!",
+    "lossTitle": "Game Over! ❌",
+    "lossMsg": "Focus and try once more.",
+    "readyText": "Ready in: ",
+    "memoText": "Memorize...",
+    "goText": "GO!"
+  },
+  "menuConfig": {
+    "defaultActiveTheme": "#34495e",
+    "previewPattern": [2, 4, 6, 8]
   }
 }
