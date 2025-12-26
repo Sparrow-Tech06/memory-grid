@@ -12,7 +12,7 @@
     { "name": "Emerald", "color": "#27ae60" },
     { "name": "Ruby", "color": "#d63031" },
     { "name": "Ocean", "color": "#0984e3" }, 
-    { name: "Plasma Pink", color: "#FF00FF" }
+    { "name": "Plasma Pink", "color": "#FF00FF" }
   ],
   "messages": {
     "winTitle": "Well Done! 🎉",
