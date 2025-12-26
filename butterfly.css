@@ -39,17 +39,25 @@ body { background: #fff; font-family: system-ui; overflow: hidden; color: #2c3e5
 }
 .popup-content { background: #fff; padding: 35px; border-radius: 25px; width: 85%; max-width: 320px; text-align: center; }
 
-/* Scroll container */
+/* Wrapper to center scroll box */
+  .theme-wrapper {
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Fixed width scroll box */
   .theme-scroll {
+    width: 108px;            /* 🔒 FIXED WIDTH */
     display: flex;
     gap: 14px;
     overflow-x: auto;
-    padding: 10px 5px 15px;
+    padding: 10px 6px 14px;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    border-radius: 14px;
   }
 
-  /* Hide scrollbar (optional) */
+  /* Hide scrollbar */
   .theme-scroll::-webkit-scrollbar {
     display: none;
   }
