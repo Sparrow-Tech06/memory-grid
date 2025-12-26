@@ -116,7 +116,7 @@ createApp({
   },
   mounted() {
     // JSON file load logic
-    fetch('config.json')
+    fetch('config.json?v="+Date.now()')
       .then(response => response.json())
       .then(data => {
         this.jsonData = data;
