@@ -75,3 +75,9 @@ body { background: #fff; font-family: system-ui; overflow: hidden; color: #2c3e5
   .color-dot:hover {
     transform: scale(1.12);
   }
+* {
+   margin: 0;
+   padding: 0 ;
+   user-select: none ;
+   box-sizing: border-box ;
+}
