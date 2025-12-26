@@ -38,3 +38,18 @@ body { background: #fff; font-family: system-ui; overflow: hidden; color: #2c3e5
   backdrop-filter: blur(4px);
 }
 .popup-content { background: #fff; padding: 35px; border-radius: 25px; width: 85%; max-width: 320px; text-align: center; }
+
+/* Scroll container */
+  .theme-scroll {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 10px 5px 15px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide scrollbar (optional) */
+  .theme-scroll::-webkit-scrollbar {
+    display: none;
+  }
