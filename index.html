@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Grid Game</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<style>
+:root {
+  --primary-color: #34495e; /* Default Dark Blue */
+  --bg-light: #ffffff;
+}
+
+body { 
+  background: var(--bg-light); 
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #333;
+  overflow: hidden;
+}
+
+/* Grid & Cells */
+.grid { display: grid; gap: 12px; margin: 30px auto; max-width: 320px; }
+.cell {
+  background: transparent;
+  border: 1.5px solid #333;
+  border-radius: 12px;
+  aspect-ratio: 1;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.1s;
+}
+.cell.active, .cell.correct { 
+  background: var(--primary-color) !important; 
+  border-color: var(--primary-color) !important; 
+}
+.cell.wrong { background: #ff6b6b !important; border-color: #ff6b6b !important; }
+
+/* Buttons */
+.btn-pill {
+  border: 2px solid #333;
+  background: white;
+  color: black;
+  border-radius: 50px;
+  padding: 10px 50px;
+  font-weight: 600;
+  transition: 0.3s;
+}
+.btn-pill:hover { background: #f8f9fa; }
+
+/* Popup Box Fixed */
+.overlay {
+  position: fixed; inset: 0; 
+  background: rgba(0, 0, 0, 0.5); /* Dim background */
+  display: flex; align-items: center; justify-content: center; 
+  z-index: 2000;
+  backdrop-filter: blur(2px);
+}
+.popup-card {
+  background: white;
+  padding: 30px;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  width: 85%;
+  max-width: 320px;
+  border: 1px solid #eee;
+}
+
+/* Color Picker UI */
+.color-options {
+  display: flex; justify-content: center; gap: 10px; margin-top: 20px;
+}
+.color-dot {
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+.color-dot.selected { border: 2px solid #000; transform: scale(1.2); }
+
+/* Bottom Nav */
+.bottom-nav {
+  position: absolute; bottom: 30px; left: 0; right: 0;
+  display: flex; justify-content: space-around;
+}
+.bottom-nav a { color: #333; font-size: 1.6rem; text-decoration: none; transition: 0.2s; }
+.bottom-nav a:hover { transform: translateY(-3px); }
+
+.back-btn { position: absolute; top: 20px; left: 20px; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+
+<body>
+
+<div id="app" class="container min-vh-100 d-flex flex-column align-items-center justify-content-center">
+
+  <div v-if="screen === 'menu'" class="w-100 text-center animate__animated animate__fadeIn">
+    <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div v-for="i in 9" :key="i" class="cell" :class="{'active': [2,4,6,8].includes(i)}"></div>
+    </div>
+
+    <div class="mb-4">
+      <small class="text-muted d-block mb-2">Select Theme Color:</small>
+      <div class="color-options">
+        <div v-for="c in themes" :key="c" 
+             class="color-dot" :style="{background: c}" 
+             :class="{selected: primaryColor === c}"
+             @click="changeTheme(c)"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-pill mt-2" @click="goToGame">Start Game</button>
+
+    <div class="bottom-nav">
+      <a href="#"><i class="bi bi-gear"></i></a>
+      <a href="#"><i class="bi bi-list-ul"></i></a>
+      <a href="#"><i class="bi bi-info-circle"></i></a>
+    </div>
+  </div>
+
+  <div v-if="screen === 'game'" class="w-100 text-center animate__animated animate__fadeIn">
+    <div class="back-btn" @click="screen = 'menu'"><i class="bi bi-chevron-left"></i> MENU</div>
+    
+    <div class="d-flex justify-content-between w-100 px-4 mb-3" style="max-width: 400px;">
+        <span class="badge bg-light text-dark border">Level: {{ level }}</span>
+        <span class="badge bg-light text-dark border">High Score: {{ highScore }}</span>
+    </div>
+
+    <div style="height: 30px;">
+        <span v-if="isCountingDown" class="text-danger fw-bold animate__animated animate__pulse animate__infinite">Starts in: {{ countdown }}s</span>
+        <span v-else-if="canClick" class="text-success fw-bold">Tap the Pattern!</span>
+    </div>
+
+    <div class="grid" :style="{gridTemplateColumns:`repeat(${gridCols},1fr)`}">
+      <div v-for="(c,i) in totalCells" :key="i" class="cell" :class="cellClass(i)" @click="selectCell(i)"></div>
+    </div>
+
+    <button class="btn btn-pill" @click="startLevel">
+      {{ gameStarted ? 'Restart Level' : 'Ready?' }}
+    </button>
+  </div>
+
+  <div v-if="popup.show" class="overlay animate__animated animate__fadeIn">
+    <div class="popup-card animate__animated animate__zoomIn">
+      <h2 class="mb-2" :class="popup.success ? 'text-success' : 'text-danger'">{{ popup.title }}</h2>
+      <p class="text-muted mb-4">{{ popup.msg }}</p>
+      <button class="btn btn-pill w-100" :style="{background: primaryColor, color: '#fff', border: 'none'}" @click="popupAction">
+        Continue
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data(){
+    return{
+      screen: 'menu',
+      level: 1,
+      highScore: localStorage.getItem('memoryHighScore') || 0,
+      primaryColor: '#34495e',
+      themes: ['#34495e', '#6c5ce7', '#00b894', '#d63031', '#e84393'],
+      pattern: [],
+      userPick: [],
+      canClick: false,
+      gameStarted: false,
+      isCountingDown: false,
+      countdown: 3,
+      popup: { show: false, title: '', msg: '', success: false }
+    }
+  },
+  computed:{
+    totalCells(){ return Math.pow(Math.floor(this.level / 4) + 3, 2); },
+    gridCols(){ return Math.sqrt(this.totalCells); }
+  },
+  methods:{
+    changeTheme(color){
+      this.primaryColor = color;
+      document.documentElement.style.setProperty('--primary-color', color);
+    },
+    goToGame() {
+        this.screen = 'game';
+        this.level = 1;
+        this.gameStarted = false;
+    },
+    startLevel(){
+      this.gameStarted = true;
+      this.userPick = [];
+      this.pattern = [];
+      this.canClick = false;
+      this.isCountingDown = false;
+      this.popup.show = false;
+
+      const patternSize = 2 + Math.floor(this.level / 2);
+      while(this.pattern.length < patternSize){
+        let r = Math.floor(Math.random() * this.totalCells);
+        if(!this.pattern.includes(r)) this.pattern.push(r);
+      }
+      setTimeout(() => { this.startCountdown(); }, 1000);
+    },
+    startCountdown(){
+      this.isCountingDown = true;
+      this.countdown = 3;
+      let timer = setInterval(() => {
+        this.countdown--;
+        if(this.countdown <= 0){
+          clearInterval(timer);
+          this.isCountingDown = false;
+          this.canClick = true;
+        }
+      }, 1000);
+    },
+    selectCell(i){
+      if(!this.canClick || this.userPick.includes(i)) return;
+      this.userPick.push(i);
+      if(!this.pattern.includes(i)){
+        this.canClick = false;
+        setTimeout(() => { 
+          this.popup = { show: true, title: "Oops! ❌", msg: "You clicked the wrong tile.", success: false }; 
+        }, 400);
+        return;
+      }
+      if(this.userPick.length === this.pattern.length){
+        this.canClick = false;
+        if(this.level > this.highScore) {
+            this.highScore = this.level;
+            localStorage.setItem('memoryHighScore', this.level);
+        }
+        setTimeout(() => { 
+          this.popup = { show: true, title: "Perfect! 🌟", msg: "You have a great memory.", success: true }; 
+        }, 400);
+      }
+    },
+    popupAction(){
+      this.popup.show = false;
+      if(this.popup.success) this.level++;
+      else this.level = 1;
+      this.startLevel();
+    },
+    cellClass(i){
+      if(!this.gameStarted) return '';
+      if(!this.canClick && !this.isCountingDown && this.pattern.includes(i)) return 'active';
+      if(this.userPick.includes(i)) return this.pattern.includes(i) ? 'correct' : 'wrong';
+      return '';
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
