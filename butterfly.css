@@ -1,6 +1,6 @@
 
 :root { --p-color: #34495e; }
-body { background: #fff; font-family: system-ui; overflow: hidden; color: #2c3e50; }
+body { background: #fff; font-family: "Inter", sans-serif; overflow: hidden; color: #2c3e50; }
 
 /* Raw Template Brackets ko hide karne ke liye */
 [v-cloak] { display: none; }
